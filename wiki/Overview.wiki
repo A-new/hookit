@@ -1,4 +1,4 @@
-#Visual overview of the hookit usage experience
+Visual overview of the hookit usage experience
 
 After you drag "example_interface_to_wrap\cameraclass.i" into the input box, you should see:
 
