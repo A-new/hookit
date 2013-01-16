@@ -1,6 +1,8 @@
 Visual overview of the hookit usage experience
 
-After you drag "example_interface_to_wrap\cameraclass.i" into the input box, you should see:
+[http://hookit.googlecode.com/svn/trunk/wiki/start.png]
+
+Drag "example_interface_to_wrap\cameraclass.i" into the input box, you should see:
 
 [http://hookit.googlecode.com/svn/trunk/wiki/Choose_Classes.png]
 
