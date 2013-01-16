@@ -1,4 +1,4 @@
-Visual overview of the hookit usage experience
+Start screen - waiting for input:
 
 [http://hookit.googlecode.com/svn/trunk/wiki/Start.png]
 
