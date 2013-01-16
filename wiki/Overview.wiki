@@ -1,6 +1,6 @@
 Visual overview of the hookit usage experience
 
-[http://hookit.googlecode.com/svn/trunk/wiki/start.png]
+[http://hookit.googlecode.com/svn/trunk/wiki/Start.png]
 
 Drag "example_interface_to_wrap\cameraclass.i" into the input box, you should see:
 
