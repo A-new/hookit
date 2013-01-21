@@ -262,6 +262,8 @@ namespace HookGenerator
 
             result += return_type + " " + call_type + " " + func.func_name + "_DETOUR (\r\n";
 
+            bFirst = true;
+
             foreach (ParsedArgument arg in func.args_list)
             {
                 result += "\t";
@@ -323,7 +325,7 @@ namespace HookGenerator
 
             //TODO: identify module for system functions
 
-            result += "\tHMODULE hmod = LoadLibrary(\"??????.dll\")\r\n";
+            result += "\tHMODULE hmod = LoadLibraryA(\"??????.dll\")\r\n";
             result += "\tassert(hmod);\r\n";
             result += "\tif (hmod)\r\n";
             result += "\t{\r\n";
@@ -335,7 +337,7 @@ namespace HookGenerator
 
             result += "\t\t{\r\n";
             //BOOL hook_res = Mhook_SetHook((PVOID*) &g_MessageBoxA_Orig, MessageBoxA_Detour);
-            result += "\t\t\t BOOL hook_res = Mhook_SetHook((PVOID*) &g_" + func.func_name + "_Orig, " + func.func_name + "_Detour);\r\n";
+            result += "\t\t\t BOOL hook_res = Mhook_SetHook((PVOID*) &g_" + func.func_name + "_ORIG, " + func.func_name + "_DETOUR);\r\n";
             result += "\t\t\t assert(hook_res);\r\n";
 
 
