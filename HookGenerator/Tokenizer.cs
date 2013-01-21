@@ -118,6 +118,19 @@ namespace HookGenerator
                 }
             }
 
+            string [] convert_from  = {  "WINAPI",   "WINAPIV",  "APIENTRY", "APIPRIVATE",   "PASCAL" };
+            string[] convert_to = { "__stdcall", "__cdecl", "__stdcall", "__stdcall", "__stdcall" };
+
+            int count = convert_from.Length;
+
+            for (int i=0;i<count;i++)
+            {
+                if (convert_from[i] == res)
+                {
+                    return convert_to[i];
+                }                
+            }         
+
             return res;
         }
     }
