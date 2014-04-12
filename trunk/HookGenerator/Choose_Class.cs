@@ -17,6 +17,16 @@ namespace HookGenerator
             InitializeComponent();
         }
 
+        //in the future this can be passed as pairs of decsriptions and functions
+        public void UpdateGenerationOptions()
+        {
+            comboBox1.Items.Add("Wrapper");
+            comboBox1.Items.Add("VTable Hook");
+            comboBox1.SelectedIndex = 0;
+            comboBox1.DropDownStyle = ComboBoxStyle.DropDownList;
+            //comboBox1.Select(
+        }
+
         public void UpdateList(string class_option)
         {
             var items = checkedListBox_ChooseClasses.Items;
@@ -46,6 +56,11 @@ namespace HookGenerator
         private void button1_Click(object sender, EventArgs e)
         {
             DialogResult = System.Windows.Forms.DialogResult.OK;
+        }
+
+        private void label2_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

@@ -708,7 +708,14 @@ namespace HookGenerator
                                 continue;
                             }
 
-                            m_ClassDeclarationLocations.Add(prev, m_MainTokenizer.m_pos);
+                            if (m_ClassDeclarationLocations.ContainsKey(prev))
+                            {
+                                Debug.Print("Error! **** class [" + prev + "] already declared! ****\r\n");
+                            }
+                            else
+                            {
+                                m_ClassDeclarationLocations.Add(prev, m_MainTokenizer.m_pos);
+                            }
 
                             Debug.Print("Code defenition added for class " + prev + " at location " + m_MainTokenizer.m_pos.ToString() + "\r\n");
                             class_started = false;
