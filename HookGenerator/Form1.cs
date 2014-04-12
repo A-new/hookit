@@ -44,9 +44,8 @@ namespace HookGenerator
 
                 SortedDictionary<string, int> classes = code_gen.build_class_db();                
 
-                //testDialog.ShowDialog(this) == DialogResult.OK
-
-                //if (classes.leng
+                // show the "choose class" dialoge, allowing to choose which class(es) to work on,
+                // and also on which generation mode to run.
 
                 Choose_Class choose_class = new Choose_Class();
 
@@ -54,14 +53,17 @@ namespace HookGenerator
                 {
                     bFoundClassesInInputText = true;
                     // do something with entry.Value or entry.Key
-                    choose_class.UpdateList(entry.Key);
+                    choose_class.UpdateList(entry.Key);                    
                 }
+
+                choose_class.UpdateGenerationOptions();
+
+                //choose_class.up
 
                 string result = "";
 
                 if (bFoundClassesInInputText)
                 {
-
 
                     if (choose_class.ShowDialog() == DialogResult.OK)
                     {
