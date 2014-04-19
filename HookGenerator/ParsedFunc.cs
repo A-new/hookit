@@ -12,6 +12,7 @@ namespace HookGenerator
         {
         }
 
+        public string call_type;
         public string return_type;
         public string func_name;
         public List<ParsedArgument> args_list;

@@ -125,12 +125,32 @@ namespace HookGenerator
                         {
                             if (!arg_list_started && !arg_list_ended)
                             {
-                                if (func.return_type != "")
+
+                                if (prev.Contains("__declspec") 
+                                    || prev.Contains("__stdcall") 
+                                    || prev.Contains("virtual") )
                                 {
-                                    func.return_type += " ";
+                                    if (!prev.Contains("__declspec(dllimport)"))
+                                    {
+                                        if (func.call_type != "")
+                                        {
+                                            func.call_type += " ";
+                                        }
+
+                                        func.call_type += prev;
+                                    }                     
+                                }
+                                else
+                                {
+                                    if (func.return_type != "")
+                                    {
+                                        func.return_type += " ";
+                                    }
+
+                                    func.return_type += prev;
                                 }
 
-                                func.return_type += prev;
+                               
                             }
                             else if (arg_list_started == true && !arg_list_ended)
                             {
@@ -355,7 +375,84 @@ namespace HookGenerator
             return result;
         }
 
-        public string generate_function_code_MemberFunction(ParsedFunc func)
+        public string generate_function_code_MemberFunction_VTABLE_HOOK(ParsedFunc func)
+        {
+            string result = "\t";
+
+            result += func.call_type + " ";
+            result += func.return_type + " ";
+            result += func.func_name + " ";
+            result += "(";
+
+            bool bFirst = true;
+
+            foreach (ParsedArgument arg in func.args_list)
+            {
+                if (!bFirst)
+                {
+                    result += ", ";
+                }
+
+                result += arg.arg_type;
+                result += arg.arg_name;
+
+                if (bFirst)
+                {
+                    bFirst = false;
+                }
+            }
+
+            result += ")\r\n";
+            result += "\t{ \r\n";
+            result += "\t\t";
+
+            if (!func.return_type.Contains("void"))
+            {
+                //result += "return ";
+                result += "" + func.return_type + " res;\r\n";
+                result += "\t\tres = ";
+            }
+            else
+            {
+                result += "\t\t";
+            }
+
+            result += "m_pOrig->" + func.func_name + "(\r\n";
+
+            bFirst = true;
+            foreach (ParsedArgument arg in func.args_list)
+            {
+                if (!bFirst)
+                {
+                    result += ",\r\n\t\t\t";
+                }
+                else
+                {
+                    result += "\t\t\t";
+                }
+
+                result += arg.arg_name;
+
+                if (bFirst)
+                {
+                    bFirst = false;
+                }
+            }
+
+            result += "\r\n";
+
+            if (!func.return_type.Contains("void"))
+            {
+                result += "\t\treturn res;\r\n";
+            }
+
+            result += "\t\t);\r\n";
+            result += "\t}\r\n";
+
+            return result;
+        }
+
+        public string generate_function_code_MemberFunction_WRAPPER(ParsedFunc func)
         {
             string result = "\t";
 
@@ -417,13 +514,155 @@ namespace HookGenerator
             return result;
         }
 
-        public string build_class_code(string class_name)
+        public string build_class_code_VTABLE_HOOK(string class_name)
         {
-            string res = build_class_code_helper(class_name, 0);
+            string res = build_class_code_helper_VTABLE_HOOK(class_name, 0);
             return res;
         }
 
-        private string build_class_code_helper(string class_name, int depth)
+        private string build_class_code_helper_VTABLE_HOOK(string class_name, int depth)
+        {
+            string result = "";
+            //first step - output the entire class declaration
+
+            if (0 == depth)
+            {
+                result += "/////////////// Hookit - Copyright (C) Yoel Shoshan - yoelshoshan at gmail.com\r\n";
+                result += "class " + class_name + "_LUCID : public " + class_name + "\r\n";
+                result += "{\r\n";
+                //constructor
+                result += "\t" + class_name + "_LUCID()\r\n";
+                result += "\t{\r\n";
+                result += "\t}\r\n";
+
+                //destructor
+                result += "\tvirtual ~" + class_name + "_LUCID()\r\n";
+                result += "\t{\r\n";
+                result += "\t}\r\n";
+            }
+
+            //foreach (KeyValuePair<String, int> entry in classes)
+            if (!m_ClassDeclarationLocations.ContainsKey(class_name))
+            {
+                return "Error! class [" + class_name + "] Not found in class defenitions map!\r\n";
+            }
+
+            int class_def_start_pos = m_ClassDeclarationLocations[class_name];
+
+            m_MainTokenizer.m_pos = class_def_start_pos;
+
+            int scope_depth = 0;
+
+            string tok;
+
+            bool reached_end = false;
+
+            bool first = true;
+            bool first_after_main_scope_start = true;
+
+            string parent = "";
+
+            bool func_decls_start = false;
+
+            while (true)
+            {
+                if (func_decls_start)
+                {
+                    ParsedFunc func = parse_func();
+                    if (null == func)
+                    {
+                        break;
+                    }
+                    result += generate_function_code_MemberFunction_VTABLE_HOOK(func) + "\r\n";
+                    continue;
+                }
+
+                tok = m_MainTokenizer.NextToken();
+
+                if ("{" == tok)
+                {
+                    scope_depth++;
+                }
+                else if ("}" == tok)
+                {
+                    scope_depth--;
+                    if (0 == scope_depth)
+                    {
+                        reached_end = true;
+                        break;
+                    }
+                }
+                else
+                {
+                    if (first)
+                    {
+                        if ("public" == tok || "private" == tok)
+                        {
+                            parent = m_MainTokenizer.NextToken();
+                            if (":" == parent) // no inheritence case
+                            {
+                                parent = "";
+                            }
+                        }
+
+                        first = false;
+                        continue;
+                    }
+
+                    if (first_after_main_scope_start && scope_depth > 0)
+                    {
+                        if ("public" == tok || "private" == tok)
+                        {
+                            tok = m_MainTokenizer.NextToken();
+                            if (":" != tok)
+                            {
+                                Debug.Print("Error! expected :\n");
+                            }
+                        }
+
+                        first_after_main_scope_start = false;
+                        func_decls_start = true;
+                        continue;
+                    }
+
+                    // member function declarations
+
+                    func_decls_start = true;
+                }
+
+            }
+
+            /*if (!reached_end)
+            {
+                Debug.Print("Error! build_class_code::reached end without main function scope closing - } \n");
+            }*/
+
+            //string dbg = "";
+            //dbg += m_text.Substring(class_def_start_pos,m_pos - class_def_start_pos);
+
+            if (parent != "")
+            {
+                result += build_class_code_helper_VTABLE_HOOK(parent, depth + 1);
+            }
+
+
+            if (0 == depth)
+            {
+                result += "};\r\n";
+
+            }
+
+            return result;
+
+        }
+
+        public string build_class_code_WRAPPER(string class_name)
+        {
+            string res = build_class_code_helper_WRAPPER(class_name, 0);
+            return res;
+        }
+
+        private string build_class_code_helper_WRAPPER(string class_name, int depth)
         {
             string result = "";
             //first step - output the entire class declaration
@@ -442,7 +681,7 @@ namespace HookGenerator
                 result += "\t}\r\n";
 
                 //destructor
-                result += "\tvirtual ~" + class_name + "_Wrapper(" + class_name + " *pOrig )\r\n";
+                result += "\tvirtual ~" + class_name + "_Wrapper()\r\n";
                 result += "\t{\r\n";
                 result += "\t\tm_pOrig = NULL;\r\n";
                 result += "\t}\r\n";
@@ -480,7 +719,7 @@ namespace HookGenerator
                     {
                         break;
                     }
-                    result += generate_function_code_MemberFunction(func) + "\r\n";
+                    result += generate_function_code_MemberFunction_WRAPPER(func) + "\r\n";
                     continue;
                 }
 
@@ -549,7 +788,7 @@ namespace HookGenerator
 
             if (parent != "")
             {
-                result += build_class_code_helper(parent, depth+1);
+                result += build_class_code_helper_WRAPPER(parent, depth+1);
             }
 
 
