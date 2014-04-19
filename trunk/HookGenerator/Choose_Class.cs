@@ -22,7 +22,7 @@ namespace HookGenerator
         {
             comboBox1.Items.Add("Wrapper");
             comboBox1.Items.Add("VTable Hook");
-            comboBox1.SelectedIndex = 0;
+            comboBox1.SelectedIndex = 1;
             comboBox1.DropDownStyle = ComboBoxStyle.DropDownList;
             //comboBox1.Select(
         }
@@ -46,6 +46,11 @@ namespace HookGenerator
                 }
             }
             return chosen_classes;
+        }
+
+        public string get_chosen_gen_mode()
+        {
+            return comboBox1.Text;
         }
 
         private void label1_Click(object sender, EventArgs e)

@@ -71,14 +71,32 @@ namespace HookGenerator
 
                         bool entered = false;
 
+                        //comboBox1.Items.Add("Wrapper");
+                        //comboBox1.Items.Add("VTable Hook");
+                        string gen_mode = choose_class.get_chosen_gen_mode();
+
                         foreach (string class_name in list)
                         {
+                            if ("Wrapper" == gen_mode)
+                            {
+                                result += code_gen.build_class_code_WRAPPER(class_name);
+                            }
+                            else if ("VTable Hook" == gen_mode)
+                            {
+                                result += code_gen.build_class_code_VTABLE_HOOK(class_name);
+                            }
+                            else
+                            {
+                                MessageBox.Show("Error! unsupported generation mode: [" + gen_mode + "]");
+                            }
                             //result += "Class ["+class_name+"]:\r\n";
-                            result += code_gen.build_class_code(class_name);
+                            
                             //result += "\r\n";
                             //result += "\r\n";    
                             entered = true;
                         }
+
+                        
 
                         if (!entered)
                         {
