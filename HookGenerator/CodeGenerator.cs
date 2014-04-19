@@ -402,7 +402,7 @@ namespace HookGenerator
             return res;
         }
 
-        public string generate_function_code_MemberFunction_VTABLE_HOOK(ParsedFunc func)
+        public string generate_function_code_MemberFunction_VTABLE_HOOK(ParsedFunc func, string class_name)
         {
             // function definition
             string result = "\t";
@@ -450,7 +450,7 @@ namespace HookGenerator
 
             result += "\tstatic "+func.return_type + "(";
             result += func.call_type + " ";
-            result += "CLASS_NAME_LUCID::* ";
+            result += class_name+"_LUCID::* ";
             result += func.func_name + "_ORIG)(";
             result += print_args(func,true);
             result += ");\r\n";
@@ -579,7 +579,7 @@ namespace HookGenerator
                     {
                         break;
                     }
-                    result += generate_function_code_MemberFunction_VTABLE_HOOK(func) + "\r\n";
+                    result += generate_function_code_MemberFunction_VTABLE_HOOK(func, class_name) + "\r\n";
                     continue;
                 }
 
