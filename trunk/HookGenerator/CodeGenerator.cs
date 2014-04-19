@@ -130,7 +130,7 @@ namespace HookGenerator
                                     || prev.Contains("__stdcall") 
                                     || prev.Contains("virtual") )
                                 {
-                                    if (!prev.Contains("__declspec(dllimport)"))
+                                    if (!prev.Contains("__declspec(dllimport)") && !prev.Contains("__declspec(nothrow)") && !prev.Contains("virtual"))
                                     {
                                         if (func.call_type != "")
                                         {
@@ -404,7 +404,7 @@ namespace HookGenerator
 
         public string generate_function_code_MemberFunction_VTABLE_HOOK_mhook_call(ParsedFunc func, string class_name, int index)
         {
-            string result = "\t{\r\n";
+            string result = "\t\t{\r\n";
 
             /*
             //extract virtual function address from the real object
@@ -465,24 +465,41 @@ namespace HookGenerator
             return result;
         }
 
-        public string generate_function_code_MemberFunction_VTABLE_HOOK(ParsedFunc func, string class_name)
+        public string generate_function_code_MemberFunction_VTABLE_HOOK(ParsedFunc func, string class_name,bool with_definition)
         {
             // function definition
             string result = "\t";
 
-            result += func.call_type + " ";
+            if (!with_definition)
+            {
+                result += "virtual ";
+            }
+
             result += func.return_type + " ";
+            result += func.call_type + " ";
+
+            if (with_definition)
+            {
+                result += class_name + "_MY::";
+            }
+
             result += func.func_name + " ";
             result += "(";
 
             result += print_args(func,true);
 
-            result += ")\r\n";
-            result += "\t{ \r\n";
+            if (!with_definition)
+            {
+                result += ");\r\n";
+                return result;
+            }
 
+            result += ")\r\n";
+
+            result += "\t{ \r\n";           
 
             result += "\t\t";
-            result += "OutputDebugStringA(\"" + class_name+"_MY::" + func.func_name + " Hook!\n\")\r\n";
+            result += "OutputDebugStringA(\"" + class_name+"_MY::" + func.func_name + " Hook!\")\r\n";
             result += "\t\t";
 
             if (!func.return_type.Contains("void"))
@@ -601,6 +618,8 @@ namespace HookGenerator
             if (0 == depth)
             {
                 result += "/////////////// Hookit - Copyright (C) Yoel Shoshan - yoelshoshan at gmail.com\r\n";
+                result += "// HEADER\r\n";
+
                 result += "class " + class_name + "_MY : public " + class_name + "\r\n";
                 result += "{\r\n";
                 //constructor
@@ -712,7 +731,7 @@ namespace HookGenerator
 
             foreach (ParsedFunc f in parsed_functions) // Loop through List with foreach
             {
-                result += generate_function_code_MemberFunction_VTABLE_HOOK(f, class_name) + "\r\n";
+                result += generate_function_code_MemberFunction_VTABLE_HOOK(f, class_name,false) + "\r\n";
             }
 
             /*if (!reached_end)
@@ -722,7 +741,7 @@ namespace HookGenerator
 
             //string dbg = "";
             //dbg += m_text.Substring(class_def_start_pos,m_pos - class_def_start_pos);
-
+            
             if (parent != "")
             {
                 result += build_class_code_helper_VTABLE_HOOK(parent, depth + 1);
@@ -732,6 +751,13 @@ namespace HookGenerator
             if (0 == depth)
             {
                 result += "};\r\n";
+            }
+
+            result += "// CPP\r\n";
+
+            foreach (ParsedFunc f in parsed_functions) // Loop through List with foreach
+            {
+                result += generate_function_code_MemberFunction_VTABLE_HOOK(f, class_name, true) + "\r\n";
             }
 
             //now, assign the orig static member functions
