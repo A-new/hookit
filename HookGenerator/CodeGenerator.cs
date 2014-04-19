@@ -402,6 +402,30 @@ namespace HookGenerator
             return res;
         }
 
+        public string generate_function_code_MemberFunction_VTABLE_HOOK_static_orig_assignment(ParsedFunc func, string class_name)
+        {
+            string result = "\t";
+            //ULONG (WINAPI Lucid_IDirect3D9::* Lucid_IDirect3D9::Real_Target)(void) = (ULONG (WINAPI Lucid_IDirect3D9::*)(void))&IDirect3D9::AddRef;
+
+            result += func.return_type + " (";
+            result += func.call_type + " ";
+            result += class_name + "_LUCID::* ";
+            result += class_name + "_LUCID::";
+            result += func.func_name + "_ORIG)(";
+            print_args(func, true);
+            result += ") = (";
+            result += func.return_type + " (";
+            result += func.call_type + " ";
+            result += class_name + "_LUCID::*)(";
+            print_args(func, true);
+            result += "))&";
+            result += class_name + "::";
+            result += func.func_name;
+            result += ";\r\n";            
+
+            return result;
+        }
+
         public string generate_function_code_MemberFunction_VTABLE_HOOK(ParsedFunc func, string class_name)
         {
             // function definition
@@ -570,6 +594,8 @@ namespace HookGenerator
 
             bool func_decls_start = false;
 
+            List<ParsedFunc> parsed_functions = new List<ParsedFunc>();
+
             while (true)
             {
                 if (func_decls_start)
@@ -579,7 +605,10 @@ namespace HookGenerator
                     {
                         break;
                     }
-                    result += generate_function_code_MemberFunction_VTABLE_HOOK(func, class_name) + "\r\n";
+
+                    parsed_functions.Add(func);
+
+                    //result += generate_function_code_MemberFunction_VTABLE_HOOK(func, class_name) + "\r\n";
                     continue;
                 }
 
@@ -638,6 +667,11 @@ namespace HookGenerator
 
             }
 
+            foreach (ParsedFunc f in parsed_functions) // Loop through List with foreach
+            {
+                result += generate_function_code_MemberFunction_VTABLE_HOOK(f, class_name) + "\r\n";
+            }
+
             /*if (!reached_end)
             {
                 Debug.Print("Error! build_class_code::reached end without main function scope closing - } \n");
@@ -655,7 +689,13 @@ namespace HookGenerator
             if (0 == depth)
             {
                 result += "};\r\n";
+            }
 
+            //now, assign the orig static member functions
+
+            foreach (ParsedFunc f in parsed_functions) // Loop through List with foreach
+            {
+                result += generate_function_code_MemberFunction_VTABLE_HOOK_static_orig_assignment(f, class_name) + "\r\n";
             }
 
             return result;
