@@ -8,9 +8,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("HookGenerator")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("LucidLogix")]
+[assembly: AssemblyCompany("MyLogix")]
 [assembly: AssemblyProduct("HookGenerator")]
-[assembly: AssemblyCopyright("Copyright © LucidLogix 2013")]
+[assembly: AssemblyCopyright("Copyright © MyLogix 2013")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

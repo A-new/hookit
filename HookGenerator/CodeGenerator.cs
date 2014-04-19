@@ -402,21 +402,60 @@ namespace HookGenerator
             return res;
         }
 
+        public string generate_function_code_MemberFunction_VTABLE_HOOK_mhook_call(ParsedFunc func, string class_name, int index)
+        {
+            string result = "\t{\r\n";
+
+            /*
+            //extract virtual function address from the real object
+            //PVOID* p_IDirect3D9_VMT = *reinterpret_cast<PVOID**>(pOrig);
+            PVOID p_IDirect3D9_QueryInterface = p_IDirect3D9_VMT[1];
+            memcpy(&g_pMy_IDirect3D9->Real_Target, &p_IDirect3D9_QueryInterface, sizeof(&g_pMy_IDirect3D9->Real_Target));
+
+            //extract virtual function address from our object
+            //PVOID* p_IDirect3D9_MY_VTABLE = *reinterpret_cast<PVOID**>(g_pMy_IDirect3D9);
+            PVOID p_My_IDirect3D9_QueryInterface = p_IDirect3D9_MY_VTABLE[1];
+
+            BOOL result = Mhook_SetHook((PVOID*) &g_pMy_IDirect3D9->Real_Target ,
+                p_My_IDirect3D9_QueryInterface
+                );
+            */
+
+            int iMyWrapperFuncIndex = 1 + index;
+            int iOrigWrapperFuncIndex = index;
+
+            result += "\t\t\t//extract virtual function address from the real object\r\n";
+            result += "\t\t\tPVOID g_" + class_name + "_" + func.func_name + " = p_" + class_name + "_VTABLE[" + iOrigWrapperFuncIndex.ToString() + "];\r\n";
+            result += "\t\t\tmemcpy(&g_pMy_" + class_name + "->" + func.func_name + "_ORIG, &p_" + class_name + "_" + func.func_name + ", sizeof(&g_pMy_+" + class_name + "->" + func.func_name + "_ORIG));\r\n";
+
+            result += "\t\t\t//extract virtual function address from our object\r\n";
+            result += "\t\t\tPVOID* p_My_" + class_name + "_" + func.func_name + " = p_" + class_name + "_MY_VTABLE[" + iMyWrapperFuncIndex.ToString() + "];\r\n";
+
+            result += "\t\t\t//do the hook\r\n";
+            result += "\t\t\tBOOL res = MHook_SetHook((PVOID*) &g_pMy_" + class_name + "->" + func.func_name + "_ORIG ,\r\n";
+            result += "\t\t\t\tp_My_" + class_name + "_" + func.func_name + ");\r\n";
+            result += "\t\t\tassert(TRUE==res);\r\n";
+
+            result += "\t\t}\r\n";
+
+            return result;
+        }
+
         public string generate_function_code_MemberFunction_VTABLE_HOOK_static_orig_assignment(ParsedFunc func, string class_name)
         {
             string result = "\t";
-            //ULONG (WINAPI Lucid_IDirect3D9::* Lucid_IDirect3D9::Real_Target)(void) = (ULONG (WINAPI Lucid_IDirect3D9::*)(void))&IDirect3D9::AddRef;
+            //ULONG (WINAPI My_IDirect3D9::* My_IDirect3D9::Real_Target)(void) = (ULONG (WINAPI My_IDirect3D9::*)(void))&IDirect3D9::AddRef;
 
             result += func.return_type + " (";
             result += func.call_type + " ";
-            result += class_name + "_LUCID::* ";
-            result += class_name + "_LUCID::";
+            result += class_name + "_MY::* ";
+            result += class_name + "_MY::";
             result += func.func_name + "_ORIG)(";
             print_args(func, true);
             result += ") = (";
             result += func.return_type + " (";
             result += func.call_type + " ";
-            result += class_name + "_LUCID::*)(";
+            result += class_name + "_MY::*)(";
             print_args(func, true);
             result += "))&";
             result += class_name + "::";
@@ -440,6 +479,10 @@ namespace HookGenerator
 
             result += ")\r\n";
             result += "\t{ \r\n";
+
+
+            result += "\t\t";
+            result += "OutputDebugStringA(\"" + class_name+"_MY::" + func.func_name + " Hook!\n\")\r\n";
             result += "\t\t";
 
             if (!func.return_type.Contains("void"))
@@ -470,11 +513,11 @@ namespace HookGenerator
 
             // static member function pointing to the original member function
             //
-            //static ULONG  (WINAPI Lucid_IDirect3D9::* Real_Target)(void);
+            //static ULONG  (WINAPI My_IDirect3D9::* Real_Target)(void);
 
             result += "\tstatic "+func.return_type + "(";
             result += func.call_type + " ";
-            result += class_name+"_LUCID::* ";
+            result += class_name+"_MY::* ";
             result += func.func_name + "_ORIG)(";
             result += print_args(func,true);
             result += ");\r\n";
@@ -558,15 +601,15 @@ namespace HookGenerator
             if (0 == depth)
             {
                 result += "/////////////// Hookit - Copyright (C) Yoel Shoshan - yoelshoshan at gmail.com\r\n";
-                result += "class " + class_name + "_LUCID : public " + class_name + "\r\n";
+                result += "class " + class_name + "_MY : public " + class_name + "\r\n";
                 result += "{\r\n";
                 //constructor
-                result += "\t" + class_name + "_LUCID()\r\n";
+                result += "\t" + class_name + "_MY()\r\n";
                 result += "\t{\r\n";
                 result += "\t}\r\n";
 
                 //destructor
-                result += "\tvirtual ~" + class_name + "_LUCID()\r\n";
+                result += "\tvirtual ~" + class_name + "_MY()\r\n";
                 result += "\t{\r\n";
                 result += "\t}\r\n";
             }
@@ -697,6 +740,41 @@ namespace HookGenerator
             {
                 result += generate_function_code_MemberFunction_VTABLE_HOOK_static_orig_assignment(f, class_name) + "\r\n";
             }
+
+
+            // now, the actual mhook call
+
+            result += "//... Put this in initialization area\r\n";
+
+            //My_IDirect3D9* g_pMy_IDirect3D9 = NULL;
+
+            result += "\t"+class_name + "_MY* g_p" + class_name + "_MY = NULL;\r\n";
+
+            result += "\tvoid hook_" + class_name + "(" + class_name + "* pOrig)\r\n";
+            result += "\t{\r\n";
+            result += "\t\t if (g_pMy_"+class_name+")\r\n";
+            result += "\t\t{\r\n";
+            result += "\t\t\treturn;\r\n";
+            result += "\t\t}\r\n";
+
+            result += "\t\tg_pMy_" + class_name + " = new "+class_name+"_MY();\r\n";
+            result += "\t\t\r\n";
+
+            //PVOID* p_IDirect3D9_VMT = *reinterpret_cast<PVOID**>(pOrig);
+            //PVOID* p_IDirect3D9_MY_VTABLE = *reinterpret_cast<PVOID**>(g_pMy_IDirect3D9);
+            result += "\t\tPVOID* p_" + class_name + "_VTABLE = *reinterpret_cast<PVOID**>(pOrig);\r\n";
+            result += "\t\tPVOID* p_" + class_name + "_MY_VTABLE = *reinterpret_cast<PVOID**>(g_pMy_"+class_name+"_MY);\r\n";
+            result += "\t\t\r\n";
+            result += "\t\t\r\n";
+            
+            int count = 0;
+            foreach (ParsedFunc f in parsed_functions) // Loop through List with foreach
+            {
+                result += generate_function_code_MemberFunction_VTABLE_HOOK_mhook_call(f, class_name, count) + "\r\n";
+                count++;
+            }
+
+            result += "\t}\r\n";
 
             return result;
 
