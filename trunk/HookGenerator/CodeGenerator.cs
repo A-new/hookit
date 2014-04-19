@@ -375,8 +375,36 @@ namespace HookGenerator
             return result;
         }
 
+        public string print_args(ParsedFunc func, bool with_type)
+        {
+            string res = "";
+            bool bFirst = true;
+
+            foreach (ParsedArgument arg in func.args_list)
+            {
+                if (!bFirst)
+                {
+                    res += ", ";
+                }
+
+                if (with_type == true)
+                {
+                    res += arg.arg_type;
+                }
+                res += arg.arg_name;
+
+                if (bFirst)
+                {
+                    bFirst = false;
+                }
+            }
+
+            return res;
+        }
+
         public string generate_function_code_MemberFunction_VTABLE_HOOK(ParsedFunc func)
         {
+            // function definition
             string result = "\t";
 
             result += func.call_type + " ";
@@ -384,23 +412,7 @@ namespace HookGenerator
             result += func.func_name + " ";
             result += "(";
 
-            bool bFirst = true;
-
-            foreach (ParsedArgument arg in func.args_list)
-            {
-                if (!bFirst)
-                {
-                    result += ", ";
-                }
-
-                result += arg.arg_type;
-                result += arg.arg_name;
-
-                if (bFirst)
-                {
-                    bFirst = false;
-                }
-            }
+            result += print_args(func,true);
 
             result += ")\r\n";
             result += "\t{ \r\n";
@@ -417,29 +429,12 @@ namespace HookGenerator
                 result += "\t\t";
             }
 
-            result += "m_pOrig->" + func.func_name + "(\r\n";
+            //ULONG hr = (this->*Real_Target)();
+            result += "(this->*" + func.func_name + "_ORIG)(\r\n\t\t\t";
 
-            bFirst = true;
-            foreach (ParsedArgument arg in func.args_list)
-            {
-                if (!bFirst)
-                {
-                    result += ",\r\n\t\t\t";
-                }
-                else
-                {
-                    result += "\t\t\t";
-                }
+            result += print_args(func,false);
 
-                result += arg.arg_name;
-
-                if (bFirst)
-                {
-                    bFirst = false;
-                }
-            }
-
-            result += "\r\n";
+            result += ");\r\n";
 
             if (!func.return_type.Contains("void"))
             {
@@ -448,6 +443,17 @@ namespace HookGenerator
 
             result += "\t\t);\r\n";
             result += "\t}\r\n";
+
+            // static member function pointing to the original member function
+            //
+            //static ULONG  (WINAPI Lucid_IDirect3D9::* Real_Target)(void);
+
+            result += "\tstatic "+func.return_type + "(";
+            result += func.call_type + " ";
+            result += "CLASS_NAME_LUCID::* ";
+            result += func.func_name + "_ORIG)(";
+            result += print_args(func,true);
+            result += ");\r\n";
 
             return result;
         }
