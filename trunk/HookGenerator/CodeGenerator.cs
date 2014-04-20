@@ -377,6 +377,12 @@ namespace HookGenerator
 
         public string print_args(ParsedFunc func, bool with_type)
         {
+            if (func.args_list.Count == 1 &&
+                func.args_list[0].arg_name == "void")
+            {
+                return "";
+            }
+
             string res = "";
             bool bFirst = true;
 
@@ -763,7 +769,7 @@ namespace HookGenerator
 
             result += "\tvoid hook_" + class_name + "(" + class_name + "* pOrig);\r\n";
 
-            result += "// CPP\r\n";
+            result += "//CPP\r\n";
 
             foreach (ParsedFunc f in parsed_functions) // Loop through List with foreach
             {
