@@ -410,7 +410,11 @@ namespace HookGenerator
 
         public string generate_function_code_MemberFunction_VTABLE_HOOK_mhook_call(ParsedFunc func, string class_name, int index)
         {
-            string result = "\t\t{\r\n";
+            //string result = "\t\t{\r\n";
+			string result = "";
+			
+			result += "\tvoid hook_func_"+func.func_name+"(PVOID* orig_vtable, PVOID* my_vtable)\r\n";
+			result += "\t{\r\n";
 
             /*
             //extract virtual function address from the real object
@@ -431,18 +435,20 @@ namespace HookGenerator
             int iOrigWrapperFuncIndex = index;
 
             result += "\t\t\t//extract virtual function address from the real object\r\n";
-            result += "\t\t\tPVOID p_" + class_name + "_" + func.func_name + " = p_" + class_name + "_VTABLE[" + iOrigWrapperFuncIndex.ToString() + "];\r\n";
+            //result += "\t\t\tPVOID p_" + class_name + "_" + func.func_name + " = p_" + class_name + "_VTABLE[" + iOrigWrapperFuncIndex.ToString() + "];\r\n";
+			result += "\t\t\tPVOID p_" + class_name + "_" + func.func_name + " = orig_vtable[" + iOrigWrapperFuncIndex.ToString() + "];\r\n";
             result += "\t\t\tmemcpy(&g_p" + class_name + "_MY->" + func.func_name + "_ORIG, &p_" + class_name + "_" + func.func_name + ", sizeof(&g_p" + class_name + "_MY->" + func.func_name + "_ORIG));\r\n";
 
             result += "\t\t\t//extract virtual function address from our object\r\n";
-            result += "\t\t\tPVOID p_My_" + class_name + "_" + func.func_name + " = p_" + class_name + "_MY_VTABLE[" + iMyWrapperFuncIndex.ToString() + "];\r\n";
+            //result += "\t\t\tPVOID p_My_" + class_name + "_" + func.func_name + " = p_" + class_name + "_MY_VTABLE[" + iMyWrapperFuncIndex.ToString() + "];\r\n";
+			result += "\t\t\tPVOID p_My_" + class_name + "_" + func.func_name + " = my_vtable[" + iMyWrapperFuncIndex.ToString() + "];\r\n";
 
             result += "\t\t\t//do the hook\r\n";
             result += "\t\t\tBOOL res = Mhook_SetHook((PVOID*) &g_p" + class_name + "_MY->" + func.func_name + "_ORIG ,\r\n";
             result += "\t\t\t\tp_My_" + class_name + "_" + func.func_name + ");\r\n";
             result += "\t\t\tassert(TRUE==res);\r\n";
 
-            result += "\t\t}\r\n";
+            result += "\t}\r\n";
 
             return result;
         }
@@ -783,14 +789,22 @@ namespace HookGenerator
                 result += generate_function_code_MemberFunction_VTABLE_HOOK_static_orig_assignment(f, class_name) + "\r\n";
             }
 
+			//our global class instance holder
+			result += "\t"+class_name + "_MY* g_p" + class_name + "_MY = NULL;\r\n";
+			
 
-            // now, the actual mhook call
+            // now, the actual mhook call       
+            
+            int count = 0;
+            foreach (ParsedFunc f in parsed_functions) // Loop through List with foreach
+            {
+                result += generate_function_code_MemberFunction_VTABLE_HOOK_mhook_call(f, class_name, count) + "\r\n";
+                count++;
+            }
+			
+			
+			 //My_IDirect3D9* g_pMy_IDirect3D9 = NULL;
 
-            result += "//... Put this in initialization area\r\n";
-
-            //My_IDirect3D9* g_pMy_IDirect3D9 = NULL;
-
-            result += "\t"+class_name + "_MY* g_p" + class_name + "_MY = NULL;\r\n";
 
             result += "\tvoid hook_" + class_name + "(" + class_name + "* pOrig)\r\n";
             result += "\t{\r\n";
@@ -806,15 +820,22 @@ namespace HookGenerator
             //PVOID* p_IDirect3D9_MY_VTABLE = *reinterpret_cast<PVOID**>(g_pMy_IDirect3D9);
             result += "\t\tPVOID* p_" + class_name + "_VTABLE = *reinterpret_cast<PVOID**>(pOrig);\r\n";
             result += "\t\tPVOID* p_" + class_name + "_MY_VTABLE = *reinterpret_cast<PVOID**>(g_p"+class_name+"_MY);\r\n";
-            result += "\t\t\r\n";
-            result += "\t\t\r\n";
-            
-            int count = 0;
+			
+			result += "\t\t\r\n";
+			result += "\t\t\r\n";
+			
+			// call all the hook functions
+			
+			count = 0;
             foreach (ParsedFunc f in parsed_functions) // Loop through List with foreach
             {
-                result += generate_function_code_MemberFunction_VTABLE_HOOK_mhook_call(f, class_name, count) + "\r\n";
+                result +=  "\t\thook_func_"+f.func_name+"("   + "p_" + class_name + "_VTABLE,"+ "p_" + class_name + "_MY_VTABLE);\r\n";
                 count++;
             }
+			
+            result += "\t\t\r\n";
+            result += "\t\t\r\n";
+			
 
             result += "\t}\r\n";
 
