@@ -413,7 +413,7 @@ namespace HookGenerator
             //string result = "\t\t{\r\n";
 			string result = "";
 			
-			result += "\tvoid hook_func_"+func.func_name+"(PVOID* orig_vtable, PVOID* my_vtable)\r\n";
+			result += "\tvoid hook_func_"  +class_name+  "_"+func.func_name+"(PVOID* orig_vtable, PVOID* my_vtable)\r\n";
 			result += "\t{\r\n";
 
             /*
@@ -829,7 +829,7 @@ namespace HookGenerator
 			count = 0;
             foreach (ParsedFunc f in parsed_functions) // Loop through List with foreach
             {
-                result +=  "\t\thook_func_"+f.func_name+"("   + "p_" + class_name + "_VTABLE,"+ "p_" + class_name + "_MY_VTABLE);\r\n";
+                result +=  "\t\thook_func_"+class_name+"_"+f.func_name+"("   + "p_" + class_name + "_VTABLE,"+ "p_" + class_name + "_MY_VTABLE);\r\n";
                 count++;
             }
 			
